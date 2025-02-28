@@ -11,20 +11,30 @@ export default function BuyerHome() {
     pickupDate: "",
     price: "",
     imageURL: "",
+    wasteType: "Plastic",
+    subtype: "",
     status: true,
     hasCollected: false,
   });
   const [items, setItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const wasteOptions = {
+    Plastic: ["Thermoplastic", "Thermosetting Plastic", "Other"],
+    Metal: ["Ferrous", "Non-Ferrous", "Alloys"],
+    "E-Waste": ["Batteries", "Circuit Boards", "Other"],
+  };
+
   // Fetch items from Firebase
   const fetchItems = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "items"));
-      const itemsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const itemsList = querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((item) => item.email === user?.email); // Filter by user email
       setItems(itemsList);
     } catch (e) {
       console.error("Failed to fetch items:", e);
@@ -37,8 +47,8 @@ export default function BuyerHome() {
 
   // Add a new item
   const addItem = async () => {
-    if (!item.location || !item.imageURL || !item.pickupDate || !item.price) {
-      alert("Enter all the details");
+    if (!item.location || !item.imageURL || !item.pickupDate || !item.price || !item.subtype) {
+      alert("Please fill out all the fields.");
       return;
     }
 
@@ -52,6 +62,8 @@ export default function BuyerHome() {
         pickupDate: "",
         price: "",
         imageURL: "",
+        wasteType: "Plastic",
+        subtype: "",
         status: true,
         hasCollected: false,
       });
@@ -99,11 +111,18 @@ export default function BuyerHome() {
             <img
               src={item.imageURL}
               alt="Item"
-              className="w-full h-40 object-cover rounded"
+              className="w-full h-32 object-cover rounded"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "150px", // Restricts the height
+                objectFit: "cover", // Ensures the image is cropped nicely within the bounds
+              }}
             />
             <h2 className="font-semibold mt-2">Location: {item.location}</h2>
             <p>Pickup Date: {new Date(item.pickupDate).toLocaleString()}</p>
             <p>Price: ${item.price}</p>
+            <p>Waste Type: {item.wasteType}</p>
+            <p>Subtype: {item.subtype}</p>
             <p>Status: {item.status ? "Active" : "Inactive"}</p>
             <p>Collected: {item.hasCollected ? "Yes" : "No"}</p>
           </div>
@@ -165,6 +184,44 @@ export default function BuyerHome() {
                   className="border rounded p-2 w-full"
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Waste Type</label>
+                <select
+                  value={item.wasteType}
+                  onChange={(e) =>
+                    setItem((prev) => ({
+                      ...prev,
+                      wasteType: e.target.value,
+                      subtype: "",
+                    }))
+                  }
+                  className="border rounded p-2 w-full"
+                  required
+                >
+                  {Object.keys(wasteOptions).map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Subtype</label>
+                <select
+                  value={item.subtype}
+                  onChange={(e) =>
+                    setItem((prev) => ({ ...prev, subtype: e.target.value }))
+                  }
+                  className="border rounded p-2 w-full"
+                  required
+                >
+                  {wasteOptions[item.wasteType].map((subtype) => (
+                    <option key={subtype} value={subtype}>
+                      {subtype}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium">Image</label>
